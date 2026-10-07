@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Senhas Temporárias</title>
+    <!-- Tailwind CSS CDN para estilos utilitários -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Arquivo CSS Personalizado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center justify-center">
+
+    <div class="max-w-2xl w-full space-y-6">
+        
+        <!-- TOP: TIMER DE DURAÇÃO -->
+        <header id="timerCard" class="glass-card rounded-2xl p-6 text-center pulse-timer transition-all duration-300">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Tempo de Validade da Senha
+                </span>
+                <button id="btnEditTime" class="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Editar Tempo</span>
+                </button>
+            </div>
+            
+            <!-- Contador Digital -->
+            <div id="displayTimer" class="text-4xl md:text-5xl font-extrabold text-blue-400 tracking-wider my-2 font-mono">
+                05:00
+            </div>
+            <p id="timerStatus" class="text-xs text-slate-400">A senha gerada expirará após este tempo decorrer.</p>
+
+            <!-- Painel Inline de Edição do Tempo -->
+            <div id="editTimePanel" class="hidden mt-4 pt-4 border-t border-slate-700/60 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <div class="flex items-center gap-2">
+                    <label for="inputMinutes" class="text-xs text-slate-300">Minutos:</label>
+                    <input type="number" id="inputMinutes" min="0" max="60" value="5" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="inputSeconds" class="text-xs text-slate-300">Segundos:</label>
+                    <input type="number" id="inputSeconds" min="0" max="59" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center text-sm text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <button id="btnSaveTime" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-1.5 rounded-lg font-medium transition shadow-md">
+                    Salvar
+                </button>
+            </div>
+        </header>
+
+        <!-- MEIO: EXIBIÇÃO E GERAÇÃO DA SENHA -->
+        <main class="glass-card rounded-2xl p-6 md:p-8 space-y-6">
+            
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-4">
+                <h1 class="text-xl font-bold flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-key text-blue-400"></i>
+                    Gerador de Senha
+                </h1>
+                <span id="strengthBadge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">
+                    Aguardando...
+                </span>
+            </div>
+
+            <!-- Campo Display da Senha Gerada -->
+            <div class="relative">
+                <input type="text" id="passwordOutput" readonly placeholder="Clique em 'Gerar Senha'" 
+                    class="w-full bg-slate-900 border-2 border-slate-700 text-xl md:text-2xl font-mono text-center text-emerald-400 py-3.5 px-12 rounded-xl focus:outline-none tracking-wider select-all">
+                
+                <button id="btnCopy" title="Copiar Senha" class="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white p-2.5 rounded-lg transition border border-slate-700">
+                    <i class="fa-regular fa-copy text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Opções de Personalização -->
+            <div class="space-y-4">
+                <!-- Tamanho da Senha -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm font-medium text-slate-300">Comprimento da Senha:</label>
+                        <span id="lengthVal" class="text-sm font-bold text-blue-400 font-mono">12</span>
+                    </div>
+                    <input type="range" id="lengthRange" min="6" max="32" value="12" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+
+                <!-- Checkboxes de Caracteres -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="chkUppercase" checked class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-600 focus:ring-blue-500">
+                        <span class="text-sm text-slate-200">Letras Maiúsculas (A-Z)</span>
+                    </label>
+
+                    <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="chkLowercase" checked class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-600 focus:ring-blue-500">
+                        <span class="text-sm text-slate-200">Letras Minúsculas (a-z)</span>
+                    </label>
+
+                    <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="chkNumbers" checked class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-600 focus:ring-blue-500">
+                        <span class="text-sm text-slate-200">Números (0-9)</span>
+                    </label>
+
+                    <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition">
+                        <input type="checkbox" id="chkSymbols" checked class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-600 focus:ring-blue-500">
+                        <span class="text-sm text-slate-200">Símbolos (!@#$%?)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Botão Gerar Senha -->
+            <button id="btnGenerate" class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg transition duration-200 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrows-rotate"></i>
+                <span>Gerar Nova Senha</span>
+            </button>
+        </main>
+
+        <!-- BASE: ENVIO DE E-MAIL -->
+        <section class="glass-card rounded-2xl p-6 md:p-8 space-y-4">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-regular fa-paper-plane text-blue-400"></i>
+                Enviar Senha por E-mail
+            </h2>
+            <p class="text-xs text-slate-400">Encaminhe a senha gerada diretamente para o e-mail do destinatário antes que expire.</p>
+
+            <form id="emailForm" onsubmit="return false;" class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i class="fa-regular fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="email" id="recipientEmail" placeholder="destinatario@exemplo.com" required
+                        class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-blue-500">
+                </div>
+                <button type="submit" id="btnSendEmail" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm px-6 py-3 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-md">
+                    <i class="fa-solid fa-share font-normal"></i>
+                    <span>Enviar</span>
+                </button>
+            </form>
+
+            <!-- Feedback de Notificação do Envio -->
+            <div id="emailFeedback" class="hidden rounded-xl p-4 text-xs space-y-1 transition duration-300"></div>
+        </section>
+
+    </div>
+
+    <!-- Arquivo JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
