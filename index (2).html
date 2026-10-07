@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Senha Temporária</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <header class="card-header">
+      <h1>Senha temporária</h1>
+      <p class="subtitle">Gere uma senha segura que expira sozinha.</p>
+    </header>
+
+    <form id="form" novalidate>
+      <fieldset class="group">
+        <legend>Tipos de caracteres</legend>
+
+        <label class="check">
+          <input type="checkbox" id="opt-upper" checked>
+          <span>Letras maiúsculas <small>A–Z</small></span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="opt-lower" checked>
+          <span>Letras minúsculas <small>a–z</small></span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="opt-numbers" checked>
+          <span>Números <small>0–9</small></span>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="opt-symbols" checked>
+          <span>Caracteres especiais <small>! @ # $ ?</small></span>
+        </label>
+      </fieldset>
+
+      <div class="field">
+        <label for="length">Tamanho da senha: <output id="length-out" for="length">16</output> caracteres</label>
+        <input type="range" id="length" min="8" max="64" value="16">
+      </div>
+
+      <div class="field">
+        <label for="duration">Duração da senha</label>
+        <div class="row">
+          <input type="number" id="duration" min="1" step="1" value="10" inputmode="numeric">
+          <select id="unit" aria-label="Unidade de tempo">
+            <option value="1">segundos</option>
+            <option value="60" selected>minutos</option>
+            <option value="3600">horas</option>
+          </select>
+        </div>
+
+        <div class="presets" role="group" aria-label="Durações rápidas">
+          <button type="button" class="chip" data-value="30" data-unit="1">30 s</button>
+          <button type="button" class="chip" data-value="5" data-unit="60">5 min</button>
+          <button type="button" class="chip" data-value="1" data-unit="3600">1 hora</button>
+          <button type="button" class="chip" data-value="24" data-unit="3600">24 horas</button>
+        </div>
+        <p class="hint">Mínimo de 5 segundos e máximo de 7 dias.</p>
+      </div>
+
+      <button type="submit" class="btn primary full">Gerar senha</button>
+    </form>
+
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+
+    <section id="result" class="result" hidden>
+      <div class="pw-box">
+        <input type="text" id="password" readonly aria-label="Senha gerada" spellcheck="false" autocomplete="off">
+        <button type="button" id="toggle-btn" class="icon-btn" aria-label="Ocultar senha" title="Mostrar/ocultar">Ocultar</button>
+        <button type="button" id="copy-btn" class="icon-btn" aria-label="Copiar senha" title="Copiar">Copiar</button>
+      </div>
+
+      <p id="strength" class="strength"></p>
+
+      <div class="timer">
+        <div class="timer-top">
+          <span>Expira em</span>
+          <strong id="countdown">--:--</strong>
+        </div>
+        <div class="bar" aria-hidden="true"><div id="bar-fill" class="bar-fill"></div></div>
+      </div>
+
+      <div class="share">
+        <label for="email">Compartilhar com (e-mail)</label>
+        <div class="row">
+          <input type="email" id="email" placeholder="pessoa@exemplo.com" autocomplete="off">
+          <button type="button" id="share-btn" class="btn">Enviar</button>
+        </div>
+        <p class="hint">Abre o seu aplicativo de e-mail com a mensagem pronta para enviar.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
