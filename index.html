@@ -1,119 +1,425 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0b0e14">
-  <title>Gerador de Senhas Temporárias</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <main class="app">
-    <section class="card" aria-labelledby="title">
-      <header class="card-header">
-        <div class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="11" width="16" height="10" rx="2"/>
-            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-          </svg>
-        </div>
+    <meta
+      name="description"
+      content="Gerador local de senhas temporárias."
+    />
+
+    <title>temp pass — senhas temporárias</title>
+
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <header class="app-header" data-testid="app-header">
+      <div class="brand">
+        <div class="brand-icon">⌁</div>
+
         <div>
-          <h1 id="title">Gerador de Senhas Temporárias</h1>
-          <p class="subtitle">Senhas aleatórias e seguras, geradas no seu navegador.</p>
+          <strong>temp<span>pass</span></strong>
+          <small>cofre temporário</small>
         </div>
-      </header>
-
-      <div class="password-box">
-        <div class="password" id="password" tabindex="0" aria-label="Senha gerada"></div>
-        <button type="button" class="icon-btn" id="regen" aria-label="Gerar nova senha" title="Gerar nova senha">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12a9 9 0 1 1-3-6.7"/>
-            <path d="M21 4v5h-5"/>
-          </svg>
-        </button>
       </div>
 
-      <div class="strength" id="strength" data-level="strong">
-        <div class="strength-head">
-          <span class="strength-title">Força da senha</span>
-          <span class="strength-label" id="strengthLabel">Forte</span>
-        </div>
-        <div class="strength-bar" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-        <p class="strength-info"><span id="strengthBits">0</span> bits de entropia · <span id="strengthTip"></span></p>
+      <div class="security-status">
+        ● local · seguro
       </div>
+    </header>
 
-      <div class="field">
-        <div class="field-head">
-          <label for="length">Tamanho da senha</label>
-          <output class="length-value" id="lengthValue" for="length">16</output>
+    <main class="app-main">
+      <aside class="settings-panel">
+        <div class="intro">
+          <p class="eyebrow">✦ gerador local</p>
+
+          <h1>
+            Senha forte.<br />
+            <span>Tempo certo.</span>
+          </h1>
+
+          <p>
+            Crie credenciais únicas, controle por quanto tempo elas vivem
+            e compartilhe com segurança.
+          </p>
         </div>
-        <input type="range" id="length" min="4" max="32" step="1" value="16" aria-valuemin="4" aria-valuemax="32">
-        <div class="range-ends" aria-hidden="true"><span>4</span><span>32</span></div>
-      </div>
 
-      <fieldset class="options">
-        <legend>Tipos de caracteres</legend>
+        <div class="presets">
+          <p class="field-label">✦ presets rápidos</p>
 
-        <label class="check">
-          <input type="checkbox" id="optUpper" checked>
-          <span class="box" aria-hidden="true"></span>
-          <span class="check-text">Letras maiúsculas <small>A-Z</small></span>
-        </label>
+          <div class="button-row">
+            <button class="pill-button" data-preset="pin">
+              PIN
+            </button>
 
-        <label class="check">
-          <input type="checkbox" id="optLower" checked>
-          <span class="box" aria-hidden="true"></span>
-          <span class="check-text">Letras minúsculas <small>a-z</small></span>
-        </label>
+            <button class="pill-button" data-preset="wifi">
+              Wi-Fi
+            </button>
 
-        <label class="check">
-          <input type="checkbox" id="optNumbers" checked>
-          <span class="box" aria-hidden="true"></span>
-          <span class="check-text">Números <small>0-9</small></span>
-        </label>
+            <button class="pill-button" data-preset="secure">
+              Alta segurança
+            </button>
+          </div>
+        </div>
 
-        <label class="check">
-          <input type="checkbox" id="optSymbols" checked>
-          <span class="box" aria-hidden="true"></span>
-          <span class="check-text">Símbolos <small>!@#$%^&amp;*</small></span>
-        </label>
-      </fieldset>
+        <section
+          class="controls"
+          aria-label="Configurações da senha"
+        >
+          <div class="control-group">
+            <div class="label-line">
+              <label for="length-slider">
+                tamanho da senha
+              </label>
 
-      <p class="notice" id="notice" role="alert" hidden></p>
+              <strong id="length-value">
+                16 <small>car.</small>
+              </strong>
+            </div>
 
-      <div class="actions">
-        <button type="button" class="btn btn-primary" id="generate">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M13 2 4 14h7l-1 8 9-12h-7z"/>
-          </svg>
-          Gerar nova senha
-        </button>
+            <input
+              id="length-slider"
+              type="range"
+              min="4"
+              max="64"
+              value="16"
+            />
 
-        <button type="button" class="btn btn-secondary" id="copy">
-          <svg class="ico-copy" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="12" height="12" rx="2"/>
-            <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>
-          </svg>
-          <svg class="ico-check" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m5 12 5 5 9-10"/>
-          </svg>
-          <span id="copyLabel">Copiar</span>
-        </button>
-      </div>
-    </section>
+            <div class="range-labels">
+              <span>4</span>
+              <span>64</span>
+            </div>
+          </div>
 
-    <footer class="foot">Nada é enviado ou armazenado: a senha existe só nesta página.</footer>
-  </main>
+          <div class="control-group">
+            <p class="field-label">
+              conjuntos permitidos
+            </p>
 
-  <div class="sr-only" id="live" role="status" aria-live="polite"></div>
+            <div class="character-grid">
+              <label class="character-option selected">
+                <input
+                  id="uppercase"
+                  type="checkbox"
+                  checked
+                />
 
-  <script src="script.js"></script>
-</body>
+                <span>
+                  <b>Maiúsculas</b>
+                  <small>A–Z</small>
+                </span>
+
+                <i>✓</i>
+              </label>
+
+              <label class="character-option selected">
+                <input
+                  id="lowercase"
+                  type="checkbox"
+                  checked
+                />
+
+                <span>
+                  <b>Minúsculas</b>
+                  <small>a–z</small>
+                </span>
+
+                <i>✓</i>
+              </label>
+
+              <label class="character-option selected">
+                <input
+                  id="numbers"
+                  type="checkbox"
+                  checked
+                />
+
+                <span>
+                  <b>Números</b>
+                  <small>0–9</small>
+                </span>
+
+                <i>✓</i>
+              </label>
+
+              <label class="character-option selected">
+                <input
+                  id="symbols"
+                  type="checkbox"
+                  checked
+                />
+
+                <span>
+                  <b>Símbolos</b>
+                  <small>!@#$</small>
+                </span>
+
+                <i>✓</i>
+              </label>
+            </div>
+
+            <input
+              id="symbol-set"
+              class="text-input"
+              value="!@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?"
+              aria-label="Personalizar símbolos"
+            />
+          </div>
+
+          <div class="control-group">
+            <div class="label-line">
+              <label for="duration-select">
+                tempo de duração
+              </label>
+
+              <span>◷</span>
+            </div>
+
+            <select id="duration-select">
+              <option value="15">
+                15 segundos
+              </option>
+
+              <option value="30">
+                30 segundos
+              </option>
+
+              <option value="60" selected>
+                1 minuto
+              </option>
+
+              <option value="300">
+                5 minutos
+              </option>
+
+              <option value="900">
+                15 minutos
+              </option>
+
+              <option value="custom">
+                Personalizado
+              </option>
+            </select>
+
+            <div
+              id="custom-duration-wrap"
+              class="custom-duration hidden"
+            >
+              <input
+                id="custom-duration"
+                class="text-input"
+                type="number"
+                min="5"
+                max="3600"
+                value="120"
+              />
+
+              <small>
+                segundos (máx. 1h)
+              </small>
+            </div>
+          </div>
+
+          <button id="generate-button" class="generate-button">
+            ✦ GERAR SENHA TEMPORÁRIA
+          </button>
+        </section>
+      </aside>
+
+      <section class="stage-panel">
+        <div class="stage-heading">
+          <div>
+            <p class="eyebrow">
+              credencial ativa
+            </p>
+
+            <h2>
+              Sua senha temporária
+            </h2>
+          </div>
+
+          <span id="status-badge" class="status-badge">
+            aguardando
+          </span>
+        </div>
+
+        <div class="stage-grid">
+          <article id="password-card" class="password-card">
+            <div class="card-meta">
+              <span>
+                ⌁ acesso protegido
+              </span>
+
+              <span id="generated-time">
+                pronto para gerar
+              </span>
+            </div>
+
+            <div class="password-area">
+              <p id="empty-state" class="empty-state">
+                <span>♢</span>
+
+                <b>
+                  Nada gerado ainda
+                </b>
+
+                <small>
+                  Configure à esquerda e gere uma senha segura.
+                </small>
+              </p>
+
+              <p
+                id="password-display"
+                class="password-display hidden"
+                aria-live="polite"
+              ></p>
+            </div>
+
+            <div class="password-actions">
+              <div class="button-row">
+                <button
+                  id="visibility-button"
+                  class="text-button"
+                  disabled
+                >
+                  ◉ Ocultar
+                </button>
+
+                <button
+                  id="copy-button"
+                  class="outline-button"
+                  disabled
+                >
+                  ▣ Copiar
+                </button>
+
+                <button
+                  id="email-button"
+                  class="outline-button"
+                  disabled
+                >
+                  ✉ Email
+                </button>
+              </div>
+
+              <span class="privacy-note">
+                não armazenada online
+              </span>
+            </div>
+
+            <div
+              id="expired-overlay"
+              class="expired-overlay hidden"
+            >
+              <div class="expired-icon">
+                ↻
+              </div>
+
+              <b>
+                Senha expirada
+              </b>
+
+              <p>
+                Por segurança, ela não está mais disponível.
+              </p>
+
+              <button
+                id="regenerate-button"
+                class="dark-button"
+              >
+                ↻ GERAR NOVA SENHA
+              </button>
+            </div>
+          </article>
+
+          <div class="metrics-column">
+            <article class="countdown-card">
+              <div class="ring-wrap">
+                <svg
+                  viewBox="0 0 160 160"
+                  aria-label="Progresso da validade"
+                >
+                  <circle
+                    class="ring-track"
+                    cx="80"
+                    cy="80"
+                    r="66"
+                  />
+
+                  <circle
+                    id="progress-ring"
+                    class="ring-progress"
+                    cx="80"
+                    cy="80"
+                    r="66"
+                  />
+                </svg>
+
+                <div class="ring-text">
+                  <strong id="countdown">
+                    00:00
+                  </strong>
+
+                  <small id="countdown-label">
+                    aguardando
+                  </small>
+                </div>
+              </div>
+
+              <p class="metric-label">
+                tempo de validade
+              </p>
+            </article>
+
+            <article class="strength-card">
+              <div class="strength-heading">
+                <span>
+                  força estimada
+                </span>
+
+                <strong id="entropy">
+                  0 bits
+                </strong>
+              </div>
+
+              <b id="strength">
+                Fraca
+              </b>
+
+              <div class="meter">
+                <i id="strength-meter"></i>
+              </div>
+
+              <small id="strength-description">
+                16 caracteres × conjunto selecionado
+              </small>
+            </article>
+          </div>
+        </div>
+
+        <div class="history-section">
+          <div class="history-heading">
+            <span>
+              ◷ gerações recentes
+            </span>
+
+            <small id="history-count">
+              0/5
+            </small>
+          </div>
+
+          <div id="history-list" class="history-list">
+            <p>
+              Suas últimas gerações aparecerão aqui —
+              sem salvar as senhas.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
 </html>
