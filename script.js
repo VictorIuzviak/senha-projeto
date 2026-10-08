@@ -1,294 +1,230 @@
 (() => {
   'use strict';
 
-  // ---------- Configurações ----------
-  const CHARSETS = {
+  /* ---------- Conjuntos de caracteres ---------- */
+  const SETS = {
     upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     lower: 'abcdefghijklmnopqrstuvwxyz',
     numbers: '0123456789',
-    symbols: '!@#$?'
+    symbols: '!@#$%^&*'
   };
+  const KEYS = Object.keys(SETS);
 
-  const MIN_SECONDS = 5;
-  const MAX_SECONDS = 7 * 24 * 3600; // 7 dias
-
-  // ---------- Elementos ----------
+  /* ---------- Elementos ---------- */
   const $ = (id) => document.getElementById(id);
 
-  const form = $('form');
-  const optUpper = $('opt-upper');
-  const optLower = $('opt-lower');
-  const optNumbers = $('opt-numbers');
-  const optSymbols = $('opt-symbols');
-  const lengthInput = $('length');
-  const lengthOut = $('length-out');
-  const durationInput = $('duration');
-  const unitSelect = $('unit');
-  const message = $('message');
+  const els = {
+    password: $('password'),
+    generate: $('generate'),
+    regen: $('regen'),
+    copy: $('copy'),
+    copyLabel: $('copyLabel'),
+    length: $('length'),
+    lengthValue: $('lengthValue'),
+    strength: $('strength'),
+    strengthLabel: $('strengthLabel'),
+    strengthBits: $('strengthBits'),
+    strengthTip: $('strengthTip'),
+    notice: $('notice'),
+    live: $('live')
+  };
 
-  const result = $('result');
-  const passwordInput = $('password');
-  const toggleBtn = $('toggle-btn');
-  const copyBtn = $('copy-btn');
-  const strengthEl = $('strength');
-  const countdownEl = $('countdown');
-  const barFill = $('bar-fill');
-  const emailInput = $('email');
-  const shareBtn = $('share-btn');
+  const checks = {
+    upper: $('optUpper'),
+    lower: $('optLower'),
+    numbers: $('optNumbers'),
+    symbols: $('optSymbols')
+  };
 
-  // ---------- Estado ----------
-  let currentPassword = '';
-  let expiresAt = 0;
-  let totalMs = 0;
-  let timerId = null;
-  let messageTimeout = null;
+  const LEVELS = {
+    weak: { label: 'Fraca', tip: 'aumente o tamanho ou marque mais tipos de caracteres.' },
+    medium: { label: 'Média', tip: 'boa para uso rápido, mas dá pra reforçar.' },
+    strong: { label: 'Forte', tip: 'ótima para uma senha temporária.' }
+  };
 
-  // ---------- Geração da senha ----------
+  let current = '';
 
-  // Inteiro aleatório em [0, max) sem viés, usando o gerador seguro do navegador.
+  /* ---------- Aleatoriedade segura (sem viés) ---------- */
   function randomInt(max) {
-    const limit = Math.floor(0x100000000 / max) * max;
-    const buffer = new Uint32Array(1);
+    const buf = new Uint32Array(1);
+    const limit = Math.floor(0x100000000 / max) * max; // descarta valores que causariam viés
+    let x;
     do {
-      crypto.getRandomValues(buffer);
-    } while (buffer[0] >= limit);
-    return buffer[0] % max;
+      crypto.getRandomValues(buf);
+      x = buf[0];
+    } while (x >= limit);
+    return x % max;
   }
 
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
       const j = randomInt(i + 1);
-      [array[i], array[j]] = [array[j], array[i]];
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return array;
+    return arr;
   }
 
-  function getActiveSets() {
-    const sets = [];
-    if (optUpper.checked) sets.push(CHARSETS.upper);
-    if (optLower.checked) sets.push(CHARSETS.lower);
-    if (optNumbers.checked) sets.push(CHARSETS.numbers);
-    if (optSymbols.checked) sets.push(CHARSETS.symbols);
-    return sets;
+  /* ---------- Lógica da senha ---------- */
+  function activeKeys() {
+    return KEYS.filter((k) => checks[k].checked);
   }
 
-  function generatePassword(length, sets) {
-    const pool = sets.join('');
-    const chars = [];
+  function poolOf(keys) {
+    return keys.map((k) => SETS[k]).join('');
+  }
 
-    // Garante ao menos um caractere de cada tipo escolhido.
-    sets.forEach((set) => chars.push(set[randomInt(set.length)]));
-
-    // Completa o restante com caracteres de qualquer tipo escolhido.
+  function generatePassword(length, keys) {
+    const pool = poolOf(keys);
+    // garante ao menos um caractere de cada tipo marcado
+    const chars = keys.map((k) => SETS[k][randomInt(SETS[k].length)]);
     while (chars.length < length) {
       chars.push(pool[randomInt(pool.length)]);
     }
-
     return shuffle(chars).join('');
   }
 
-  function describeStrength(length, poolSize) {
+  // força = entropia (bits) = tamanho × log2(tamanho do alfabeto)
+  function calcStrength(length, poolSize) {
     const bits = length * Math.log2(poolSize);
-    if (bits < 50) return { label: 'Força: fraca', css: 'weak' };
-    if (bits < 80) return { label: 'Força: média', css: 'medium' };
-    return { label: 'Força: forte', css: 'strong' };
+    const level = bits < 40 ? 'weak' : bits < 70 ? 'medium' : 'strong';
+    return { bits, level };
   }
 
-  // ---------- Duração ----------
-
-  function readDurationSeconds() {
-    const value = Number(durationInput.value);
-    const unit = Number(unitSelect.value);
-    if (!Number.isFinite(value) || value <= 0) return NaN;
-    return Math.round(value * unit);
-  }
-
-  function formatRemaining(ms) {
-    const total = Math.max(0, Math.ceil(ms / 1000));
-    const days = Math.floor(total / 86400);
-    const hours = Math.floor((total % 86400) / 3600);
-    const minutes = Math.floor((total % 3600) / 60);
-    const seconds = total % 60;
-    const pad = (n) => String(n).padStart(2, '0');
-
-    if (days > 0) return `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-    return `${pad(minutes)}:${pad(seconds)}`;
-  }
-
-  function tick() {
-    const remaining = expiresAt - Date.now();
-    if (remaining <= 0) {
-      expire();
-      return;
+  /* ---------- Renderização ---------- */
+  function renderPassword(str) {
+    const frag = document.createDocumentFragment();
+    for (const ch of str) {
+      const span = document.createElement('span');
+      if (/[0-9]/.test(ch)) span.className = 'num';
+      else if (/[^A-Za-z0-9]/.test(ch)) span.className = 'sym';
+      span.textContent = ch;
+      frag.appendChild(span);
     }
-
-    countdownEl.textContent = formatRemaining(remaining);
-
-    const ratio = remaining / totalMs;
-    barFill.style.width = `${ratio * 100}%`;
-    barFill.classList.toggle('low', ratio <= 0.3 && ratio > 0.1);
-    barFill.classList.toggle('critical', ratio <= 0.1);
+    els.password.replaceChildren(frag);
+    els.password.dataset.size = str.length <= 16 ? 's' : str.length <= 24 ? 'm' : 'l';
   }
 
-  function expire() {
-    clearInterval(timerId);
-    timerId = null;
-    currentPassword = '';
-
-    passwordInput.type = 'text';
-    passwordInput.value = '';
-    passwordInput.placeholder = 'Senha expirada';
-    countdownEl.textContent = 'expirada';
-    barFill.style.width = '0%';
-    strengthEl.textContent = '';
-    strengthEl.className = 'strength';
-
-    result.classList.add('expired');
-    copyBtn.disabled = true;
-    toggleBtn.disabled = true;
-    shareBtn.disabled = true;
-
-    showMessage('A senha expirou. Gere uma nova quando precisar.', 'error', 0);
+  function renderStrength(length, keys) {
+    const { bits, level } = calcStrength(length, poolOf(keys).length);
+    els.strength.dataset.level = level;
+    els.strengthLabel.textContent = LEVELS[level].label;
+    els.strengthBits.textContent = Math.round(bits);
+    els.strengthTip.textContent = LEVELS[level].tip;
   }
 
-  // ---------- Mensagens ----------
-
-  function showMessage(text, type = 'ok', duration = 3500) {
-    clearTimeout(messageTimeout);
-    message.textContent = text;
-    message.className = `message ${type}`;
-    if (duration > 0) {
-      messageTimeout = setTimeout(() => {
-        message.textContent = '';
-        message.className = 'message';
-      }, duration);
-    }
+  function renderLength() {
+    const min = Number(els.length.min);
+    const max = Number(els.length.max);
+    const value = Number(els.length.value);
+    els.lengthValue.textContent = value;
+    els.length.style.setProperty('--fill', ((value - min) / (max - min)) * 100 + '%');
   }
 
-  // ---------- Ações ----------
-
-  function handleGenerate(event) {
-    event.preventDefault();
-
-    const sets = getActiveSets();
-    if (sets.length === 0) {
-      showMessage('Escolha pelo menos um tipo de caractere.', 'error');
-      return;
-    }
-
-    const seconds = readDurationSeconds();
-    if (Number.isNaN(seconds) || seconds < MIN_SECONDS || seconds > MAX_SECONDS) {
-      showMessage('A duração deve ficar entre 5 segundos e 7 dias.', 'error');
-      durationInput.focus();
-      return;
-    }
-
-    const length = Number(lengthInput.value);
-    currentPassword = generatePassword(length, sets);
-
-    // Prepara a exibição
-    clearInterval(timerId);
-    totalMs = seconds * 1000;
-    expiresAt = Date.now() + totalMs;
-
-    passwordInput.type = 'text';
-    passwordInput.placeholder = '';
-    passwordInput.value = currentPassword;
-    toggleBtn.textContent = 'Ocultar';
-    toggleBtn.setAttribute('aria-label', 'Ocultar senha');
-
-    const strength = describeStrength(length, sets.join('').length);
-    strengthEl.textContent = strength.label;
-    strengthEl.className = `strength ${strength.css}`;
-
-    result.classList.remove('expired');
-    copyBtn.disabled = false;
-    toggleBtn.disabled = false;
-    shareBtn.disabled = false;
-    result.hidden = false;
-
-    barFill.className = 'bar-fill';
-    tick();
-    timerId = setInterval(tick, 250);
-
-    showMessage('Senha gerada!', 'ok');
+  function showNotice(msg) {
+    els.notice.textContent = msg;
+    els.notice.hidden = false;
+    clearTimeout(showNotice.timer);
+    showNotice.timer = setTimeout(() => {
+      els.notice.hidden = true;
+    }, 3500);
   }
 
-  function toggleVisibility() {
-    const hidden = passwordInput.type === 'password';
-    passwordInput.type = hidden ? 'text' : 'password';
-    toggleBtn.textContent = hidden ? 'Ocultar' : 'Mostrar';
-    toggleBtn.setAttribute('aria-label', hidden ? 'Ocultar senha' : 'Mostrar senha');
+  function resetCopyButton() {
+    clearTimeout(copyTimer);
+    els.copy.classList.remove('copied');
+    els.copyLabel.textContent = 'Copiar';
   }
 
-  async function copyPassword() {
-    if (!currentPassword) return;
+  /* ---------- Gerar ---------- */
+  function refresh() {
+    const keys = activeKeys();
+    const length = Number(els.length.value);
+    current = generatePassword(length, keys);
+    renderPassword(current);
+    renderStrength(length, keys);
+    resetCopyButton();
+  }
 
+  /* ---------- Copiar ---------- */
+  async function copyToClipboard(text) {
     try {
-      await navigator.clipboard.writeText(currentPassword);
-    } catch (error) {
-      // Alternativa para navegadores sem acesso à área de transferência.
-      const previousType = passwordInput.type;
-      passwordInput.type = 'text';
-      passwordInput.select();
-      document.execCommand('copy');
-      passwordInput.type = previousType;
-      passwordInput.setSelectionRange(0, 0);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      /* tenta o plano B */
     }
-
-    showMessage('Senha copiada!', 'ok');
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e) {
+      return false;
+    }
   }
 
-  function shareByEmail() {
-    if (!currentPassword) return;
+  let copyTimer = 0;
 
-    const email = emailInput.value.trim();
-    if (!email || !emailInput.checkValidity()) {
-      showMessage('Digite um e-mail válido para compartilhar.', 'error');
-      emailInput.focus();
-      return;
+  async function handleCopy() {
+    if (!current) return;
+    const ok = await copyToClipboard(current);
+    clearTimeout(copyTimer);
+
+    if (ok) {
+      els.copy.classList.add('copied');
+      els.copyLabel.textContent = 'Copiado!';
+      els.live.textContent = 'Senha copiada para a área de transferência.';
+      copyTimer = setTimeout(resetCopyButton, 2000);
+    } else {
+      const sel = window.getSelection();
+      if (sel) sel.selectAllChildren(els.password);
+      showNotice('Não foi possível copiar automaticamente. A senha foi selecionada: use Ctrl+C.');
     }
-
-    const remaining = expiresAt - Date.now();
-    if (remaining <= 0) {
-      expire();
-      return;
-    }
-
-    const validUntil = new Date(expiresAt).toLocaleString('pt-BR', {
-      dateStyle: 'short',
-      timeStyle: 'short'
-    });
-
-    const subject = 'Sua senha temporária';
-    const body =
-      'Olá!\n\n' +
-      `Sua senha temporária é: ${currentPassword}\n\n` +
-      `Ela é válida por ${formatRemaining(remaining)} (até ${validUntil}).\n` +
-      'Por segurança, não compartilhe esta mensagem com mais ninguém.\n';
-
-    const address = encodeURIComponent(email).replace(/%40/g, '@');
-    window.location.href =
-      `mailto:${address}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    showMessage('Abrindo seu aplicativo de e-mail…', 'ok');
   }
 
-  function applyPreset(event) {
-    const chip = event.target.closest('.chip');
-    if (!chip) return;
-    durationInput.value = chip.dataset.value;
-    unitSelect.value = chip.dataset.unit;
-  }
+  /* ---------- Eventos ---------- */
+  els.generate.addEventListener('click', refresh);
+  els.regen.addEventListener('click', refresh);
+  els.copy.addEventListener('click', handleCopy);
 
-  // ---------- Eventos ----------
-  form.addEventListener('submit', handleGenerate);
-  lengthInput.addEventListener('input', () => {
-    lengthOut.textContent = lengthInput.value;
+  els.length.addEventListener('input', () => {
+    renderLength();
+    refresh();
   });
-  document.querySelector('.presets').addEventListener('click', applyPreset);
-  toggleBtn.addEventListener('click', toggleVisibility);
-  copyBtn.addEventListener('click', copyPassword);
-  shareBtn.addEventListener('click', shareByEmail);
+
+  KEYS.forEach((k) => {
+    checks[k].addEventListener('change', () => {
+      if (activeKeys().length === 0) {
+        checks[k].checked = true; // nunca deixa tudo desmarcado
+        const label = checks[k].closest('.check');
+        label.classList.remove('shake');
+        void label.offsetWidth;
+        label.classList.add('shake');
+        showNotice('Mantenha pelo menos um tipo de caractere selecionado.');
+        return;
+      }
+      els.notice.hidden = true;
+      refresh();
+    });
+  });
+
+  /* ---------- Início ---------- */
+  if (!window.crypto || !crypto.getRandomValues) {
+    els.password.textContent = 'Navegador sem suporte';
+    showNotice('Seu navegador não tem gerador de números aleatórios seguro. Atualize-o para continuar.');
+    els.generate.disabled = true;
+    els.regen.disabled = true;
+    els.copy.disabled = true;
+    return;
+  }
+
+  renderLength();
+  refresh();
 })();
